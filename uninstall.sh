@@ -120,8 +120,27 @@ if [ ! -d "$HOME/Library/icloud_backup" ] && \
     exit 0
 fi
 
-echo -e "${BLUE}What would you like to do?${NC}"
+# Ask for confirmation before proceeding
+echo -e "${YELLOW}Are you sure you want to uninstall CloudSyncBridge?${NC}"
 echo ""
+echo "This will:"
+echo "  • Stop all automatic sync services"
+echo "  • Remove CloudSyncBridge agents"
+echo "  • Optionally remove scripts and configuration"
+echo ""
+echo -e "${GREEN}Your synced files will NOT be deleted.${NC}"
+echo ""
+
+CONFIRM_OPTIONS=("Yes, proceed with uninstall" "No, cancel")
+CONFIRM_CHOICE=$(menu "Continue?" "${CONFIRM_OPTIONS[@]}")
+
+echo ""
+
+if [ $CONFIRM_CHOICE -eq 1 ]; then
+    echo "Uninstall cancelled."
+    echo ""
+    exit 0
+fi
 
 # Step 1: Stop sync services
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
