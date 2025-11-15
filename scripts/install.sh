@@ -912,32 +912,14 @@ echo -e "${GREEN}✓${NC} Installed periodic agent"
     echo "   ls \"$SOURCE_DRIVE/test_icloud\""
     echo ""
 
-    # Offer to open log
     echo ""
-    LOG_OPTIONS=("Yes, open log file" "No, I'm done")
-    LOG_CHOICE=$(menu "Would you like to view the sync log?" "${LOG_OPTIONS[@]}")
-
+    echo "Useful commands:"
+    echo "  • View logs: cloudsyncbridge logs"
+    echo "  • Manual sync: cloudsyncbridge sync"
+    echo "  • Check status: cloudsyncbridge status"
     echo ""
-
-    if [ $LOG_CHOICE -eq 0 ]; then
-        echo "Opening log file..."
-        echo ""
-        if command -v tail &> /dev/null; then
-            echo "Showing last 50 lines of log (press Ctrl+C to exit):"
-            echo ""
-            tail -f -n 50 "$LOG_DIR/sync.log"
-        else
-            open "$LOG_DIR/sync.log"
-        fi
-    else
-        echo "Useful commands:"
-        echo "  • View logs: tail -f $LOG_DIR/sync.log"
-        echo "  • Manual sync: ~/Library/icloud_backup/sync_unison.sh"
-        echo "  • Check status: launchctl list | grep icloudbackup"
-        echo ""
-        echo -e "${GREEN}Happy syncing! 🚀${NC}"
-        echo ""
-    fi
+    echo -e "${GREEN}Happy syncing! 🚀${NC}"
+    echo ""
 else
     # Manual-only mode
     echo ""
@@ -980,11 +962,14 @@ else
     fi
 
     echo ""
-    echo "To manually sync anytime, run:"
-    echo "  ~/Library/icloud_backup/sync_unison.sh"
+    echo "Useful commands:"
+    echo "  • Manual sync: cloudsyncbridge sync"
+    echo "  • View logs: cloudsyncbridge logs"
     echo ""
     echo "To enable auto-sync later:"
     echo "  1. Grant Full Disk Access to Terminal.app in System Settings"
-    echo "  2. Run this installer again"
+    echo "  2. Run: cloudsyncbridge install"
+    echo ""
+    echo -e "${GREEN}Happy syncing! 🚀${NC}"
     echo ""
 fi
