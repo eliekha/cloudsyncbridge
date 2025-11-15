@@ -1,0 +1,45 @@
+{
+  "name": "cloudbridge",
+  "version": "1.0.0",
+  "description": "Bidirectional iCloud sync for external drives - keeps your external drive and iCloud Drive perfectly in sync",
+  "main": "bin/cloudbridge.js",
+  "bin": {
+    "cloudbridge": "./bin/cloudbridge.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "icloud",
+    "sync",
+    "backup",
+    "unison",
+    "bidirectional",
+    "macos",
+    "external-drive",
+    "cloud-sync"
+  ],
+  "author": "Elias Khalifeh",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eliekha/cloudbridge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eliekha/cloudbridge/issues"
+  },
+  "homepage": "https://github.com/eliekha/cloudbridge#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "darwin"
+  ],
+  "files": [
+    "bin/",
+    "scripts/",
+    "README.md",
+    "LICENSE",
+    "config.sh.example"
+  ]
+}

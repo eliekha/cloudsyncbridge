@@ -1,0 +1,19 @@
+# Generated configuration (use config.sh.example as template)
+config.sh
+
+# macOS
+.DS_Store
+._*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log
