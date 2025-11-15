@@ -722,7 +722,7 @@ perform_sync() {
     set_lock
     build_ignore_args
     log "Running Unison sync..."
-    /opt/homebrew/bin/unison "$SOURCE_DRIVE" "$BACKUP_FOLDER" -auto -batch -times -perms 0 -fat -prefer newer "${IGNORE_ARGS[@]}" -logfile "$LOG_FILE" 2>&1 | while read line; do
+    /opt/homebrew/bin/unison "$SOURCE_DRIVE" "$BACKUP_FOLDER" -auto -batch -times -perms 0 -fat -prefer newer -confirmbigdel=false "${IGNORE_ARGS[@]}" -logfile "$LOG_FILE" 2>&1 | while read line; do
         echo "$line" | tee -a "$LOG_FILE"
     done
     UNISON_EXIT_CODE=${PIPESTATUS[0]}
