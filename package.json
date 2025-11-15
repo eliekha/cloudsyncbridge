@@ -1,10 +1,10 @@
 {
-  "name": "cloudbridge",
+  "name": "cloudsyncbridge",
   "version": "1.0.0",
   "description": "Bidirectional iCloud sync for external drives - keeps your external drive and iCloud Drive perfectly in sync",
-  "main": "bin/cloudbridge.js",
+  "main": "bin/cloudsyncbridge.js",
   "bin": {
-    "cloudbridge": "./bin/cloudbridge.js"
+    "cloudsyncbridge": "./bin/cloudsyncbridge.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -23,12 +23,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/eliekha/cloudbridge.git"
+    "url": "https://github.com/eliekha/cloudsyncbridge.git"
   },
   "bugs": {
-    "url": "https://github.com/eliekha/cloudbridge/issues"
+    "url": "https://github.com/eliekha/cloudsyncbridge/issues"
   },
-  "homepage": "https://github.com/eliekha/cloudbridge#readme",
+  "homepage": "https://github.com/eliekha/cloudsyncbridge#readme",
   "engines": {
     "node": ">=14.0.0"
   },

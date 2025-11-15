@@ -1,8 +1,8 @@
-# CloudBridge
+# CloudSyncBridge
 
 **Bidirectional iCloud Sync for External Drives**
 
-CloudBridge automatically keeps your external drive and iCloud Drive perfectly in sync, similar to how macOS syncs Desktop and Documents folders. Built on Unison for intelligent bidirectional synchronization.
+CloudSyncBridge automatically keeps your external drive and iCloud Drive perfectly in sync, similar to how macOS syncs Desktop and Documents folders. Built on Unison for intelligent bidirectional synchronization.
 
 ## Features
 
@@ -19,25 +19,25 @@ CloudBridge automatically keeps your external drive and iCloud Drive perfectly i
 
 ### Option 1: NPM (Recommended)
 
-Install CloudBridge globally via npm:
+Install CloudSyncBridge globally via npm:
 
 ```bash
-npm install -g cloudbridge
+npm install -g cloudsyncbridge
 ```
 
 Then run the installer:
 
 ```bash
-cloudbridge install
+cloudsyncbridge install
 ```
 
 Available commands:
-- `cloudbridge install` - Interactive installation wizard
-- `cloudbridge uninstall` - Remove CloudBridge
-- `cloudbridge status` - Check sync status
-- `cloudbridge sync` - Manually trigger sync
-- `cloudbridge logs` - View sync logs
-- `cloudbridge help` - Show help
+- `cloudsyncbridge install` - Interactive installation wizard
+- `cloudsyncbridge uninstall` - Remove CloudSyncBridge
+- `cloudsyncbridge status` - Check sync status
+- `cloudsyncbridge sync` - Manually trigger sync
+- `cloudsyncbridge logs` - View sync logs
+- `cloudsyncbridge help` - Show help
 
 ### Option 2: Manual Installation
 

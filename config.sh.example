@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# CloudBridge Configuration Template
-# This file is generated automatically by install.sh
+# CloudSyncBridge Configuration Template
+# This file is generated automatically by the installer
 
 # Source: External drive to back up
 # Example: /Volumes/MyExternalDrive

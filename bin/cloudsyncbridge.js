@@ -8,24 +8,24 @@ const SCRIPTS_DIR = path.join(__dirname, '..', 'scripts');
 
 function showBanner() {
   console.log(`
-   _____ _                 _ ____       _     _
-  / ____| |               | |  _ \\     (_)   | |
- | |    | | ___  _   _  __| | |_) |_ __ _  __| | __ _  ___
- | |    | |/ _ \\| | | |/ _\` |  _ <| '__| |/ _\` |/ _\` |/ _ \\
- | |____| | (_) | |_| | (_| | |_) | |  | | (_| | (_| |  __/
-  \\_____|_|\\___/ \\__,_|\\__,_|____/|_|  |_|\\__,_|\\__, |\\___|
-                                                 __/ |
-                                                |___/
+   _____ _                 _  _____                   ____       _     _
+  / ____| |               | |/ ____|                 |  _ \\     (_)   | |
+ | |    | | ___  _   _  __| | (___  _   _ _ __   ___| |_) |_ __ _  __| | __ _  ___
+ | |    | |/ _ \\| | | |/ _\` |\\___ \\| | | | '_ \\ / __|  _ <| '__| |/ _\` |/ _\` |/ _ \\
+ | |____| | (_) | |_| | (_| |____) | |_| | | | | (__| |_) | |  | | (_| | (_| |  __/
+  \\_____|_|\\___/ \\__,_|\\__,_|_____/ \\__, |_| |_|\\___|____/|_|  |_|\\__,_|\\__, |\\___|
+                                     __/ |                               __/ |
+                                    |___/                               |___/
   `);
 }
 
 function showHelp() {
   showBanner();
-  console.log('CloudBridge - Bidirectional iCloud Sync for External Drives\n');
-  console.log('Usage: cloudbridge <command>\n');
+  console.log('CloudSyncBridge - Bidirectional iCloud Sync for External Drives\n');
+  console.log('Usage: cloudsyncbridge <command>\n');
   console.log('Commands:');
-  console.log('  install     - Install and configure CloudBridge');
-  console.log('  uninstall   - Remove CloudBridge from your system');
+  console.log('  install     - Install and configure CloudSyncBridge');
+  console.log('  uninstall   - Remove CloudSyncBridge from your system');
   console.log('  status      - Check sync status and view running agents');
   console.log('  sync        - Manually trigger a sync');
   console.log('  logs        - View sync logs');
@@ -33,15 +33,15 @@ function showHelp() {
   console.log('  version     - Show version information');
   console.log('');
   console.log('Examples:');
-  console.log('  cloudbridge install    # Start interactive installation');
-  console.log('  cloudbridge status     # Check if sync is running');
-  console.log('  cloudbridge logs       # Follow sync logs in real-time');
+  console.log('  cloudsyncbridge install    # Start interactive installation');
+  console.log('  cloudsyncbridge status     # Check if sync is running');
+  console.log('  cloudsyncbridge logs       # Follow sync logs in real-time');
   console.log('');
 }
 
 function showVersion() {
   const packageJson = require('../package.json');
-  console.log(`CloudBridge v${packageJson.version}`);
+  console.log(`CloudSyncBridge v${packageJson.version}`);
 }
 
 function runScript(scriptName, args = []) {
@@ -77,19 +77,19 @@ function runScript(scriptName, args = []) {
 
 function checkStatus() {
   showBanner();
-  console.log('CloudBridge Status\n');
+  console.log('CloudSyncBridge Status\n');
 
   const homeDir = process.env.HOME;
   const configPath = `${homeDir}/Library/icloud_backup/config.sh`;
 
   // Check if installed
   if (!fs.existsSync(configPath)) {
-    console.log('❌ CloudBridge is not installed');
-    console.log('\nRun: cloudbridge install');
+    console.log('❌ CloudSyncBridge is not installed');
+    console.log('\nRun: cloudsyncbridge install');
     return;
   }
 
-  console.log('✓ CloudBridge is installed\n');
+  console.log('✓ CloudSyncBridge is installed\n');
 
   // Check agents
   try {
@@ -143,8 +143,8 @@ function manualSync() {
   const syncScript = `${homeDir}/Library/icloud_backup/sync_unison.sh`;
 
   if (!fs.existsSync(syncScript)) {
-    console.error('Error: CloudBridge is not installed');
-    console.error('\nRun: cloudbridge install');
+    console.error('Error: CloudSyncBridge is not installed');
+    console.error('\nRun: cloudsyncbridge install');
     process.exit(1);
   }
 
