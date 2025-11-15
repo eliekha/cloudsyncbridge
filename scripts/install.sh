@@ -881,11 +881,39 @@ echo -e "${GREEN}✓${NC} Installed periodic agent"
         pkill -f "unison.*$SOURCE_DRIVE" 2>/dev/null || true
         sleep 1
 
-        echo -e "${YELLOW}Syncing... This may take several minutes for large drives.${NC}"
+        # Build ignore arguments
+        IGNORE_ARGS=()
+        for folder in "${EXCLUDE_FOLDERS[@]}"; do
+            IGNORE_ARGS+=("-ignore" "Path $folder")
+        done
+        for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+            IGNORE_ARGS+=("-ignore" "Name $pattern")
+        done
+
+        echo -e "${YELLOW}Starting sync...${NC}"
+        echo -e "${BLUE}Note: Progress shows directories being synced, with data transfer details.${NC}"
         echo ""
-        "$INSTALL_DIR/sync_unison.sh"
+
+        # Run sync directly and show all output
+        /opt/homebrew/bin/unison "$SOURCE_DRIVE" "$BACKUP_FOLDER" \
+            -auto \
+            -batch \
+            -times \
+            -perms 0 \
+            -fat \
+            -prefer newer \
+            -confirmbigdel=false \
+            "${IGNORE_ARGS[@]}" \
+            -logfile "$LOG_DIR/sync.log"
+
+        SYNC_EXIT=$?
         echo ""
-        echo -e "${GREEN}✓ Initial sync complete!${NC}"
+        if [ $SYNC_EXIT -eq 0 ] || [ $SYNC_EXIT -eq 1 ]; then
+            echo -e "${GREEN}✓ Initial sync complete!${NC}"
+        else
+            echo -e "${RED}✗ Sync failed (exit code: $SYNC_EXIT)${NC}"
+            echo "Check logs: $LOG_DIR/sync.log"
+        fi
     else
         echo "Skipped initial sync. Run manually when ready:"
         echo "  ~/Library/icloud_backup/sync_unison.sh"
@@ -970,11 +998,39 @@ else
         pkill -f "unison.*$SOURCE_DRIVE" 2>/dev/null || true
         sleep 1
 
-        echo -e "${YELLOW}Syncing... This may take several minutes for large drives.${NC}"
+        # Build ignore arguments
+        IGNORE_ARGS=()
+        for folder in "${EXCLUDE_FOLDERS[@]}"; do
+            IGNORE_ARGS+=("-ignore" "Path $folder")
+        done
+        for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+            IGNORE_ARGS+=("-ignore" "Name $pattern")
+        done
+
+        echo -e "${YELLOW}Starting sync...${NC}"
+        echo -e "${BLUE}Note: Progress shows directories being synced, with data transfer details.${NC}"
         echo ""
-        "$INSTALL_DIR/sync_unison.sh"
+
+        # Run sync directly and show all output
+        /opt/homebrew/bin/unison "$SOURCE_DRIVE" "$BACKUP_FOLDER" \
+            -auto \
+            -batch \
+            -times \
+            -perms 0 \
+            -fat \
+            -prefer newer \
+            -confirmbigdel=false \
+            "${IGNORE_ARGS[@]}" \
+            -logfile "$LOG_DIR/sync.log"
+
+        SYNC_EXIT=$?
         echo ""
-        echo -e "${GREEN}✓ Sync complete!${NC}"
+        if [ $SYNC_EXIT -eq 0 ] || [ $SYNC_EXIT -eq 1 ]; then
+            echo -e "${GREEN}✓ Sync complete!${NC}"
+        else
+            echo -e "${RED}✗ Sync failed (exit code: $SYNC_EXIT)${NC}"
+            echo "Check logs: $LOG_DIR/sync.log"
+        fi
     fi
 
     echo ""
