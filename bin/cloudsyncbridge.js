@@ -35,9 +35,22 @@ function showBanner() {
   `);
 }
 
+function isInstalled() {
+  const homeDir = process.env.HOME;
+  const configPath = `${homeDir}/Library/icloud_backup/config.sh`;
+  return fs.existsSync(configPath);
+}
+
 function showHelp() {
   showBanner();
   console.log('CloudSyncBridge - Bidirectional iCloud Sync for External Drives\n');
+
+  if (!isInstalled()) {
+    console.log('\x1b[1;33m⚠  CloudSyncBridge is not set up yet!\x1b[0m\n');
+    console.log('\x1b[0;32mGet started:\x1b[0m');
+    console.log('  cloudsyncbridge install    # Run the interactive installer\n');
+  }
+
   console.log('Usage: cloudsyncbridge <command>\n');
   console.log('Commands:');
   console.log('  install     - Install and configure CloudSyncBridge');
