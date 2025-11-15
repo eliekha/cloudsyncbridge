@@ -1,13 +1,14 @@
 {
   "name": "cloudsyncbridge",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Bidirectional iCloud sync for external drives - keeps your external drive and iCloud Drive perfectly in sync",
   "main": "bin/cloudsyncbridge.js",
   "bin": {
     "cloudsyncbridge": "./bin/cloudsyncbridge.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "node postinstall.js"
   },
   "keywords": [
     "icloud",
@@ -38,6 +39,7 @@
   "files": [
     "bin/",
     "scripts/",
+    "postinstall.js",
     "README.md",
     "LICENSE",
     "config.sh.example"
