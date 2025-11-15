@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
-const GREEN = '\x1b[0;32m';
-const BLUE = '\x1b[0;34m';
-const YELLOW = '\x1b[1;33m';
-const NC = '\x1b[0m'; // No Color
+// Only show for global installs, not when used as a dependency
+if (process.env.npm_config_global === 'true') {
+  const GREEN = '\x1b[0;32m';
+  const BLUE = '\x1b[0;34m';
+  const YELLOW = '\x1b[1;33m';
+  const NC = '\x1b[0m';
 
-console.log(`
+  // Write directly to process.stdout to ensure it's visible
+  process.stdout.write(`
 ${GREEN}╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
 ║  CloudSyncBridge installed successfully! 🎉                ║
@@ -29,3 +32,4 @@ ${BLUE}Documentation:${NC}
    https://github.com/eliekha/cloudsyncbridge#readme
 
 `);
+}
