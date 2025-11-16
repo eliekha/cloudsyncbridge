@@ -52,7 +52,7 @@ function isInstalled() {
 
 function showHelp() {
   showBanner();
-  console.log('CloudSyncBridge - Bidirectional iCloud Sync for External Drives\n');
+  console.log('CloudSyncBridge - Bidirectional iCloud Sync for External Drives & Folders\n');
 
   if (!isInstalled()) {
     console.log('\x1b[1;33m⚠  CloudSyncBridge is not set up yet!\x1b[0m\n');
