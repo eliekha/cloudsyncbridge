@@ -1,6 +1,6 @@
 {
   "name": "cloudsyncbridge",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Bidirectional iCloud sync for any folder - sync external drives, projects, downloads, and any folder to iCloud with automatic bidirectional sync",
   "main": "bin/cloudsyncbridge.js",
   "bin": {
@@ -41,7 +41,6 @@
     "scripts/",
     "postinstall.js",
     "README.md",
-    "LICENSE",
-    "config.sh.example"
+    "LICENSE"
   ]
 }
