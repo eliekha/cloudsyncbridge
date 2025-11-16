@@ -46,11 +46,186 @@ echo ""
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source shared components
-source "$SCRIPT_DIR/exclusion_config.sh" 2>/dev/null
-source "$SCRIPT_DIR/menu_functions.sh" 2>/dev/null
-source "$SCRIPT_DIR/initial_sync.sh" 2>/dev/null
+# Interactive menu function with arrow key navigation
+menu() {
+    local prompt="$1"
+    shift
+    local options=("$@")
+    local selected=0
+    local last_selected=-1
 
+    # Hide cursor
+    tput civis >&2
+
+    # Draw initial menu (to stderr so it doesn't get captured)
+    echo -e "${YELLOW}${prompt}${NC}" >&2
+    echo -e "${BLUE}Use ↑/↓ arrows to navigate, Enter to select${NC}" >&2
+    for i in "${!options[@]}"; do
+        echo "" >&2
+    done
+
+    while true; do
+        # Move cursor to start of options (skip prompt + instruction line)
+        tput cuu $(( ${#options[@]} )) >&2
+
+        # Display options
+        for i in "${!options[@]}"; do
+            # Clear the line
+            tput el >&2
+            if [ $i -eq $selected ]; then
+                echo -e "  ${GREEN}▶ ${options[$i]}${NC}" >&2
+            else
+                echo "    ${options[$i]}" >&2
+            fi
+        done
+
+        # Read key from tty
+        IFS= read -rsn1 key </dev/tty
+
+        # Handle arrow keys (escape sequences)
+        if [ "$key" = $'\x1b' ]; then
+            IFS= read -rsn2 key </dev/tty
+            case "$key" in
+                '[A') # Up arrow
+                    ((selected--))
+                    if [ $selected -lt 0 ]; then
+                        selected=$(( ${#options[@]} - 1 ))
+                    fi
+                    ;;
+                '[B') # Down arrow
+                    ((selected++))
+                    if [ $selected -ge ${#options[@]} ]; then
+                        selected=0
+                    fi
+                    ;;
+            esac
+        elif [ "$key" = "" ]; then
+            # Enter key
+            break
+        fi
+    done
+
+    # Show cursor
+    tput cnorm >&2
+
+    # Output selected index to stdout (not stderr)
+    echo "$selected"
+}
+
+# Multi-select menu function with space to toggle, enter to confirm
+# Usage: multi_select_menu "prompt" preselect_pattern option1 option2 option3...
+# preselect_pattern: regex pattern to match options that should be pre-checked (use "NONE" for no preselection)
+multi_select_menu() {
+    local prompt="$1"
+    local preselect_pattern="$2"
+    shift 2
+    local options=("$@")
+    local selected=0
+    local -a checked=()
+
+    # Initialize checkboxes - pre-check items matching pattern
+    for i in "${!options[@]}"; do
+        if [ "$preselect_pattern" != "NONE" ] && [[ "${options[$i]}" =~ $preselect_pattern ]]; then
+            checked[$i]=1
+        else
+            checked[$i]=0
+        fi
+    done
+
+    # Hide cursor
+    tput civis >&2
+
+    # Draw initial menu header (to stderr so it doesn't get captured)
+    echo -e "${YELLOW}${prompt}${NC}" >&2
+    echo -e "${BLUE}Use ↑/↓ to navigate, Space to toggle [✓], Enter when done${NC}" >&2
+
+    # Draw initial options
+    for i in "${!options[@]}"; do
+        local checkbox="[ ]"
+        if [ ${checked[$i]} -eq 1 ]; then
+            checkbox="[✓]"
+        fi
+
+        if [ $i -eq $selected ]; then
+            echo -e "  ${GREEN}▶ ${checkbox} ${options[$i]}${NC}" >&2
+        else
+            echo "    ${checkbox} ${options[$i]}" >&2
+        fi
+    done
+
+    while true; do
+        # Read key from tty (IFS= prevents trimming of space character)
+        IFS= read -rsn1 key </dev/tty
+
+        # Handle key input FIRST before redrawing
+        local should_redraw=0
+
+        if [ "$key" = $'\x1b' ]; then
+            # Arrow key - read the rest of the escape sequence
+            IFS= read -rsn2 rest </dev/tty
+            case "$rest" in
+                '[A') # Up arrow
+                    ((selected--))
+                    if [ $selected -lt 0 ]; then
+                        selected=$(( ${#options[@]} - 1 ))
+                    fi
+                    should_redraw=1
+                    ;;
+                '[B') # Down arrow
+                    ((selected++))
+                    if [ $selected -ge ${#options[@]} ]; then
+                        selected=0
+                    fi
+                    should_redraw=1
+                    ;;
+            esac
+        elif [ "$key" = " " ]; then
+            # Space - toggle selection
+            if [ ${checked[$selected]} -eq 1 ]; then
+                checked[$selected]=0
+            else
+                checked[$selected]=1
+            fi
+            should_redraw=1
+        elif [ "$key" = "" ]; then
+            # Enter - done
+            break
+        fi
+
+        # Only redraw if something changed
+        if [ $should_redraw -eq 1 ]; then
+            # Move cursor back up to start of options
+            tput cuu $(( ${#options[@]} )) >&2
+
+            # Redraw all options
+            for i in "${!options[@]}"; do
+                tput el >&2
+                local checkbox="[ ]"
+                if [ ${checked[$i]} -eq 1 ]; then
+                    checkbox="[✓]"
+                fi
+
+                if [ $i -eq $selected ]; then
+                    echo -e "  ${GREEN}▶ ${checkbox} ${options[$i]}${NC}" >&2
+                else
+                    echo "    ${checkbox} ${options[$i]}" >&2
+                fi
+            done
+        fi
+    done
+
+    # Show cursor
+    tput cnorm >&2
+
+    # Return checked items as space-separated indices (only this goes to stdout)
+    local result=""
+    for i in "${!checked[@]}"; do
+        if [ ${checked[$i]} -eq 1 ]; then
+            result="$result $i"
+        fi
+    done
+    echo "$result"
+}
 
 # Check for Homebrew
 if ! command -v brew &> /dev/null; then
@@ -452,15 +627,171 @@ for sync_idx in "${!SELECTED_SYNCS_PATHS[@]}"; do
     SYNC_PATH="${SELECTED_SYNCS_PATHS[$sync_idx]}"
     SYNC_NAME="${SELECTED_SYNCS_NAMES[$sync_idx]}"
 
-    # Use shared exclusion configuration component
-    configure_exclusions "$SYNC_PATH" "$SYNC_NAME"
+    echo -e "${CYAN}Configuring exclusions for: ${GREEN}$SYNC_NAME${NC}"
+    echo -e "${GRAY}Path: $SYNC_PATH${NC}"
+    echo ""
+
+    # Scan for top-level folders
+    echo "Scanning folders..."
+    FOLDER_OPTIONS=()
+    while IFS= read -r folder; do
+        # Skip . and .. explicitly
+        if [ "$folder" = "." ] || [ "$folder" = ".." ]; then
+            continue
+        fi
+        # Include ALL other folders (visible and hidden)
+        if [ -d "$SYNC_PATH/$folder" ]; then
+            FOLDER_OPTIONS+=("$folder")
+        fi
+    done < <(ls -1a "$SYNC_PATH" 2>/dev/null)
+
+# Default recommended exclusions
+RECOMMENDED_EXCLUDES=(
+    ".Spotlight-V100"
+    ".DocumentRevisions-V100"
+    ".TemporaryItems"
+    ".Trashes"
+    ".fseventsd"
+)
+
+# Build display options with "(recommended)" labels
+FULL_FOLDER_OPTIONS=()
+for folder in "${FOLDER_OPTIONS[@]}"; do
+    # Check if it's a recommended exclusion
+    is_recommended=0
+    for rec in "${RECOMMENDED_EXCLUDES[@]}"; do
+        if [ "$folder" = "$rec" ]; then
+            is_recommended=1
+            break
+        fi
+    done
+
+    if [ $is_recommended -eq 1 ]; then
+        FULL_FOLDER_OPTIONS+=("$folder (recommended)")
+    else
+        FULL_FOLDER_OPTIONS+=("$folder")
+    fi
+done
+
+echo "Found ${#FOLDER_OPTIONS[@]} folders"
+
+if [ ${#FULL_FOLDER_OPTIONS[@]} -gt 0 ]; then
+    echo ""
+    echo "Select folders to EXCLUDE from sync:"
+    echo -e "${BLUE}Recommended exclusions are pre-selected${NC}"
+    echo ""
+
+    SELECTED_INDICES=$(multi_select_menu "Choose folders to exclude:" "\(recommended\)" "${FULL_FOLDER_OPTIONS[@]}")
+
+    # Build exclude folders array from selection
+    EXCLUDE_FOLDERS=()
+    for idx in $SELECTED_INDICES; do
+        # Remove " (recommended)" suffix if present
+        folder="${FOLDER_OPTIONS[$idx]}"
+        EXCLUDE_FOLDERS+=("$folder")
+    done
+
+    echo ""
+    if [ ${#EXCLUDE_FOLDERS[@]} -gt 0 ]; then
+        echo -e "${GREEN}✓ Will exclude ${#EXCLUDE_FOLDERS[@]} top-level folder(s)${NC}"
+    else
+        echo -e "${YELLOW}No top-level folders will be excluded${NC}"
+    fi
+else
+    EXCLUDE_FOLDERS=()
+    echo -e "${YELLOW}No folders found in source drive${NC}"
+fi
+
+# Subfolder exclusions
+echo ""
+echo -e "${BLUE}Subfolder Exclusions${NC}"
+echo "===================="
+echo ""
+echo "Do you want to exclude any specific subfolders?"
+echo "Example: Projects/node_modules, Documents/cache"
+echo ""
+
+SUBFOLDER_OPTIONS=("Yes, add subfolder exclusions" "No, skip this step")
+SUBFOLDER_CHOICE=$(menu "Exclude specific subfolders?" "${SUBFOLDER_OPTIONS[@]}")
+
+echo ""
+
+if [ $SUBFOLDER_CHOICE -eq 0 ]; then
+    echo ""
+    echo -e "${YELLOW}Enter subfolder paths to exclude (comma-separated):${NC}"
+    echo "Paths are relative to your external drive root."
+    echo "Example: Projects/temp, Documents/.git, Music/duplicates"
+    echo ""
+    read -p "Subfolder paths: " subfolder_input
+
+    if [ -n "$subfolder_input" ]; then
+        # Split by comma and trim whitespace
+        IFS=',' read -ra SUBFOLDERS <<< "$subfolder_input"
+        for subfolder in "${SUBFOLDERS[@]}"; do
+            # Trim leading/trailing whitespace
+            subfolder=$(echo "$subfolder" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            if [ -n "$subfolder" ]; then
+                EXCLUDE_FOLDERS+=("$subfolder")
+                echo -e "${GREEN}✓ Added: $subfolder${NC}"
+            fi
+        done
+    fi
+    echo ""
+    echo -e "${GREEN}✓ Total folders to exclude: ${#EXCLUDE_FOLDERS[@]}${NC}"
+else
+    echo "Skipped subfolder exclusions"
+fi
+
+# File patterns to exclude
+echo ""
+echo -e "${BLUE}File Pattern Exclusions${NC}"
+echo "========================"
+echo ""
+echo "Default exclusions:"
+echo "  • *.env (environment files)"
+echo "  • .DS_Store (macOS metadata)"
+echo "  • ._* (macOS resource forks)"
+echo ""
+
+PATTERN_OPTIONS=("Yes, add default exclusions" "No, skip defaults")
+PATTERN_CHOICE=$(menu "Add these default exclusions?" "${PATTERN_OPTIONS[@]}")
+
+echo ""
+
+EXCLUDE_PATTERNS=()
+if [ $PATTERN_CHOICE -eq 0 ]; then
+    EXCLUDE_PATTERNS=("*.env" ".DS_Store" "._*")
+    echo -e "${GREEN}✓ Added default file patterns${NC}"
+else
+    echo "Skipped default patterns"
+fi
+
+# Allow custom patterns
+echo ""
+echo -e "${YELLOW}Add custom file patterns to exclude? (one per line, empty line to finish)${NC}"
+echo "Examples: *.log, *.tmp, node_modules, .git"
+echo ""
+
+while true; do
+    read -p "Pattern (or press Enter to finish): " custom_pattern
+    if [ -z "$custom_pattern" ]; then
+        break
+    fi
+    EXCLUDE_PATTERNS+=("$custom_pattern")
+    echo -e "${GREEN}✓ Added: $custom_pattern${NC}"
+done
+
+if [ ${#EXCLUDE_PATTERNS[@]} -gt 0 ]; then
+    echo ""
+    echo -e "${GREEN}Total file patterns to exclude: ${#EXCLUDE_PATTERNS[@]}${NC}"
+fi
 
     # Store exclusions for this sync
     EXCLUSIONS_STR=""
-    for folder in "${CONFIGURED_EXCLUDE_FOLDERS[@]}"; do
+    for folder in "${EXCLUDE_FOLDERS[@]}"; do
         EXCLUSIONS_STR+="$folder"$'\n'
     done
-    for pattern in "${CONFIGURED_EXCLUDE_PATTERNS[@]}"; do
+    for pattern in "${EXCLUDE_PATTERNS[@]}"; do
         EXCLUSIONS_STR+="PATTERN:$pattern"$'\n'
     done
     SELECTED_SYNCS_EXCLUDES[$sync_idx]="$EXCLUSIONS_STR"
@@ -482,9 +813,9 @@ for sync_idx in "${!SELECTED_SYNCS_PATHS[@]}"; do
     echo -e "  Source: ${SELECTED_SYNCS_PATHS[$sync_idx]}"
     echo -e "  Destination: ~/Library/Mobile Documents/com~apple~CloudDocs/${SELECTED_SYNCS_NAMES[$sync_idx]}"
 
-    # Count exclusions (filter out empty lines)
-    EXCLUDE_COUNT=$(echo "${SELECTED_SYNCS_EXCLUDES[$sync_idx]}" | grep -v '^$' | wc -l | xargs)
-    if [ "$EXCLUDE_COUNT" -gt 0 ]; then
+    # Count exclusions
+    EXCLUDE_COUNT=$(echo "${SELECTED_SYNCS_EXCLUDES[$sync_idx]}" | grep -c '^' || echo "0")
+    if [ $EXCLUDE_COUNT -gt 0 ]; then
         echo -e "  Exclusions: $EXCLUDE_COUNT item(s)"
     else
         echo -e "  Exclusions: None"
@@ -503,18 +834,10 @@ if [ $CONFIRM_CHOICE -ne 0 ]; then
 fi
 
 # Create necessary directories
-if [ -z "$INSTALL_DIR" ]; then
-    INSTALL_DIR="$HOME/Library/icloud_backup"
-fi
-if [ -z "$SYNCS_DIR" ]; then
-    SYNCS_DIR="$INSTALL_DIR/syncs"
-fi
-if [ -z "$LOG_DIR" ]; then
-    LOG_DIR="$HOME/Library/Logs/icloud_backup"
-fi
-if [ -z "$LAUNCH_AGENTS_DIR" ]; then
-    LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
-fi
+INSTALL_DIR="$HOME/Library/icloud_backup"
+SYNCS_DIR="$INSTALL_DIR/syncs"
+LOG_DIR="$HOME/Library/Logs/icloud_backup"
+LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 
 echo ""
 echo "Creating directories..."
@@ -597,9 +920,6 @@ $(echo -e "$EXCLUDE_PATTERNS_STR")
 
 # Enable this sync
 ENABLED=true
-
-# Track first sync (prevents deletions on initial sync)
-FIRST_SYNC_DONE=false
 EOF
 
     echo -e "${GREEN}✓ Created sync: $SYNC_NAME ($SYNC_ID)${NC}"
@@ -613,10 +933,8 @@ echo ""
 echo "Installing sync management scripts..."
 cp "$SCRIPT_DIR/sync_manager.sh" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/manage_syncs.sh" "$INSTALL_DIR/"
-cp "$SCRIPT_DIR/file_watcher.sh" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/sync_manager.sh"
 chmod +x "$INSTALL_DIR/manage_syncs.sh"
-chmod +x "$INSTALL_DIR/file_watcher.sh"
 echo -e "${GREEN}✓ Installed sync management scripts${NC}"
 
 # Create global config
@@ -633,18 +951,290 @@ GLOBALEOF
 
 echo -e "${GREEN}✓${NC} Created global configuration"
 
-# Initial Sync Section (before starting agents)
-run_initial_sync "${#SELECTED_SYNCS_PATHS[@]}" "all"
-
-# Set up and start launchd agents for automatic syncing
+# Set up launchd agents for automatic syncing
 echo ""
-echo -e "${BLUE}Setting up automatic sync...${NC}"
 bash "$SCRIPT_DIR/setup_agents.sh"
 
+# All sync configurations and agents are now set up!
+# Proceed to initial sync
+#!/bin/bash
+# CloudSyncBridge now uses multi-sync system
+# This file is kept for backward compatibility only
+# Individual sync configurations are in ~/Library/icloud_backup/syncs/
+SOURCE_DRIVE="${SELECTED_SYNCS_PATHS[0]:-}"
+ICLOUD_DRIVE="$HOME/Library/Mobile Documents/com~apple~CloudDocs"
+BACKUP_FOLDER="$ICLOUD_DRIVE/${SELECTED_SYNCS_NAMES[0]:-Backup}"
+EXCLUDE_FOLDERS=()
+EXCLUDE_PATTERNS=(".DS_Store" "*.tmp" "._*")
+LOG_DIR="$HOME/Library/Logs/icloud_backup"
+LOG_FILE="\$LOG_DIR/sync.log"
+
+# Source: External drive to back up
+SOURCE_DRIVE="$SOURCE_DRIVE"
+
+# Destination: iCloud Drive folder
+ICLOUD_DRIVE="$HOME/Library/Mobile Documents/com~apple~CloudDocs"
+BACKUP_FOLDER="$BACKUP_FOLDER"
+
+# Folders to exclude (relative to source drive)
+EXCLUDE_FOLDERS=(
+$(echo -e "$EXCLUDE_FOLDERS_STR")
+)
+
+# File patterns to exclude
+EXCLUDE_PATTERNS=(
+$(echo -e "$EXCLUDE_PATTERNS_STR")
+)
+
+# Log file location
+LOG_DIR="$HOME/Library/Logs/icloud_backup"
+LOG_FILE="\$LOG_DIR/sync.log"
+EOF
+
+echo -e "${GREEN}✓${NC} Created config.sh"
+
+# Copy scripts to ~/Library/icloud_backup
 echo ""
-echo -e "${GREEN}════════════════════════════════════════${NC}"
-echo -e "${GREEN}   Installation Complete! 🎉${NC}"
-echo -e "${GREEN}════════════════════════════════════════${NC}"
+echo "Installing scripts..."
+
+# Create Unison sync script
+cat > "$INSTALL_DIR/sync_unison.sh" << 'SYNCEOF'
+#!/bin/bash
+# Unison bidirectional sync script
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/config.sh"
+mkdir -p "$LOG_DIR"
+LOCK_FILE="$LOG_DIR/.sync_unison.lock"
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [UNISON] $1" | tee -a "$LOG_FILE"; }
+check_lock() {
+    if [ -f "$LOCK_FILE" ]; then
+        local lock_pid=$(cat "$LOCK_FILE" 2>/dev/null || echo 0)
+        if ps -p "$lock_pid" > /dev/null 2>&1; then
+            log "Sync already running (PID: $lock_pid). Skipping."
+            return 1
+        else
+            rm -f "$LOCK_FILE"
+        fi
+    fi
+    return 0
+}
+set_lock() { echo $$ > "$LOCK_FILE"; }
+remove_lock() { rm -f "$LOCK_FILE"; }
+trap remove_lock EXIT
+check_source_mounted() {
+    if [ ! -d "$SOURCE_DRIVE" ]; then
+        log "ERROR: External drive not mounted at $SOURCE_DRIVE"
+        return 1
+    fi
+    return 0
+}
+build_ignore_args() {
+    IGNORE_ARGS=()
+    for folder in "${EXCLUDE_FOLDERS[@]}"; do
+        IGNORE_ARGS+=("-ignore" "Path $folder")
+    done
+    for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+        IGNORE_ARGS+=("-ignore" "Name $pattern")
+    done
+}
+perform_sync() {
+    check_lock || exit 0
+    log "Starting bidirectional sync"
+    check_source_mounted || exit 1
+    mkdir -p "$BACKUP_FOLDER"
+    set_lock
+    build_ignore_args
+    log "Running Unison sync..."
+    /opt/homebrew/bin/unison "$SOURCE_DRIVE" "$BACKUP_FOLDER" -auto -batch -times -perms 0 -fat -prefer newer -confirmbigdel=false "${IGNORE_ARGS[@]}" -logfile "$LOG_FILE" 2>&1 | while read line; do
+        echo "$line" | tee -a "$LOG_FILE"
+    done
+    UNISON_EXIT_CODE=${PIPESTATUS[0]}
+    if [ $UNISON_EXIT_CODE -eq 0 ]; then
+        log "Sync completed successfully"
+    elif [ $UNISON_EXIT_CODE -eq 1 ]; then
+        log "WARNING: Some files were skipped, but sync completed"
+    else
+        log "ERROR: Sync failed with exit code $UNISON_EXIT_CODE"
+        exit $UNISON_EXIT_CODE
+    fi
+}
+perform_sync
+SYNCEOF
+
+chmod +x "$INSTALL_DIR/sync_unison.sh"
+echo -e "${GREEN}✓${NC} Installed sync_unison.sh"
+
+# Create watch script
+cat > "$INSTALL_DIR/watch_unison.sh" << 'WATCHEOF'
+#!/bin/bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/config.sh"
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WATCH] $1" | tee -a "$LOG_FILE"; }
+if ! command -v fswatch &> /dev/null; then
+    log "ERROR: fswatch not found"
+    exit 1
+fi
+[ ! -d "$BACKUP_FOLDER" ] && mkdir -p "$BACKUP_FOLDER"
+log "Starting file system watcher on both locations..."
+/opt/homebrew/bin/fswatch -0 --event Created --event Updated --event Removed --event Renamed --exclude '/\.Spotlight-V100/' --exclude '/\.DocumentRevisions-V100/' --exclude '/\.TemporaryItems/' --exclude '/\.Trashes/' --exclude '/\.fseventsd/' --exclude '\.DS_Store$' --exclude '/Applications/' --exclude '\.unison' --latency 5 "$SOURCE_DRIVE" "$BACKUP_FOLDER" | while read -d "" event; do
+    [[ "$event" == "$SOURCE_DRIVE"* ]] && log "Change on external drive: $event" || log "Change in iCloud: $event"
+    log "Triggering sync..."
+    "$SCRIPT_DIR/sync_unison.sh"
+done
+WATCHEOF
+
+chmod +x "$INSTALL_DIR/watch_unison.sh"
+echo -e "${GREEN}✓${NC} Installed watch_unison.sh"
+
+# Create launchd agents (skip if user chose manual-only mode)
+if [ "$SKIP_AUTO_SYNC" != "true" ]; then
+    echo ""
+    echo "Installing launchd agents..."
+
+    # Unload old agents if they exist
+    for agent in com.icloudbackup.unison.watch com.icloudbackup.unison.periodic; do
+        if [ -f "$LAUNCH_AGENTS_DIR/${agent}.plist" ]; then
+            launchctl unload "$LAUNCH_AGENTS_DIR/${agent}.plist" 2>/dev/null || true
+        fi
+    done
+
+    # Watch agent
+    cat > "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.watch.plist" << WATCHPLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.icloudbackup.unison.watch</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$INSTALL_DIR/watch_unison.sh</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>PathState</key>
+        <dict>
+            <key>$SOURCE_DRIVE</key>
+            <true/>
+        </dict>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/tmp/icloudbackup.unison.watch.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/icloudbackup.unison.watch.error.log</string>
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+</dict>
+</plist>
+WATCHPLIST
+
+echo -e "${GREEN}✓${NC} Installed watch agent"
+
+# Periodic agent
+cat > "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.periodic.plist" << PERIODICPLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.icloudbackup.unison.periodic</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$INSTALL_DIR/sync_unison.sh</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>1800</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/icloudbackup.unison.periodic.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/icloudbackup.unison.periodic.error.log</string>
+</dict>
+</plist>
+PERIODICPLIST
+
+echo -e "${GREEN}✓${NC} Installed periodic agent"
+
+    # Clean up before starting agents
+    echo ""
+    echo "Preparing to start agents..."
+
+    # Clean Unison locks
+    rm -f ~/.unison/lk* 2>/dev/null || true
+
+    # Kill any existing Unison processes
+    pkill -f "unison.*$SOURCE_DRIVE" 2>/dev/null || true
+    sleep 1
+
+    # Load agents
+    echo "Starting agents..."
+    launchctl load "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.watch.plist"
+    echo -e "${GREEN}✓${NC} Started real-time watcher"
+
+    launchctl load "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.periodic.plist"
+    echo -e "${GREEN}✓${NC} Started periodic sync"
+
+    # Ask about initial sync
+fi
+# END LEGACY INSTALLATION (SKIPPED)
+
+# Initial Sync Section
+echo ""
+echo -e "${BLUE}Initial Sync${NC}"
+echo "============"
+echo ""
+echo "The initial sync will copy all files to iCloud."
+echo -e "${YELLOW}Note: This may take a while depending on the amount of data.${NC}"
+echo ""
+echo "You have ${#SELECTED_SYNCS_PATHS[@]} folder(s) configured for syncing."
+echo ""
+
+SYNC_OPTIONS=("Yes, run initial sync now" "No, I'll sync manually later")
+SYNC_CHOICE=$(menu "Run initial sync?" "${SYNC_OPTIONS[@]}")
+
+echo ""
+
+if [ $SYNC_CHOICE -eq 0 ]; then
+    echo -e "${BLUE}Running initial sync for all configured folders...${NC}"
+    echo ""
+
+    # Clean up any stale Unison lock files
+    echo "Cleaning up any stale Unison lock files..."
+    rm -f ~/.unison/lk* 2>/dev/null || true
+
+    # Kill any existing Unison processes
+    pkill -f "unison" 2>/dev/null || true
+    sleep 1
+
+    echo -e "${YELLOW}Starting sync...${NC}"
+    echo -e "${BLUE}Note: Each folder will be synced sequentially.${NC}"
+    echo ""
+
+    # Run sync_manager.sh to sync all enabled syncs
+    bash "$INSTALL_DIR/sync_manager.sh" all
+
+        SYNC_EXIT=$?
+        echo ""
+        if [ $SYNC_EXIT -eq 0 ] || [ $SYNC_EXIT -eq 1 ]; then
+            echo -e "${GREEN}✓ Initial sync complete!${NC}"
+        else
+            echo -e "${RED}✗ Sync failed (exit code: $SYNC_EXIT)${NC}"
+            echo "Check logs: $LOG_DIR/sync.log"
+        fi
+    else
+        echo "Skipped initial sync. Run manually when ready:"
+        echo "  ~/Library/icloud_backup/sync_unison.sh"
+    fi
+
+    echo ""
+    echo -e "${GREEN}════════════════════════════════════════${NC}"
+    echo -e "${GREEN}   Installation Complete! 🎉${NC}"
+    echo -e "${GREEN}════════════════════════════════════════${NC}"
     echo ""
     echo "Your bidirectional sync system is now running:"
     echo "  • Automatic sync every 30 minutes"
@@ -689,3 +1279,84 @@ echo -e "${GREEN}═════════════════════
     echo ""
     echo -e "${GREEN}Happy syncing! 🚀${NC}"
     echo ""
+else
+    # Manual-only mode
+    echo ""
+    echo -e "${GREEN}════════════════════════════════════════${NC}"
+    echo -e "${GREEN}   Installation Complete!${NC}"
+    echo -e "${GREEN}════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${YELLOW}Auto-sync was skipped.${NC}"
+    echo "Scripts have been installed for manual use only."
+    echo ""
+    echo "Locations:"
+    echo "  • External drive: $SOURCE_DRIVE"
+    echo "  • iCloud: $BACKUP_FOLDER"
+    echo ""
+
+    # Ask about initial sync in manual mode too
+    echo ""
+    MANUAL_SYNC_OPTIONS=("Yes, run a sync now" "No, I'll sync manually later")
+    MANUAL_SYNC_CHOICE=$(menu "Would you like to run an initial sync?" "${MANUAL_SYNC_OPTIONS[@]}")
+
+    echo ""
+
+    if [ $MANUAL_SYNC_CHOICE -eq 0 ]; then
+        echo -e "${BLUE}Running sync...${NC}"
+        echo ""
+
+        # Clean up any stale Unison lock files
+        echo "Cleaning up any stale Unison lock files..."
+        rm -f ~/.unison/lk* 2>/dev/null || true
+
+        # Kill any existing Unison processes
+        pkill -f "unison.*$SOURCE_DRIVE" 2>/dev/null || true
+        sleep 1
+
+        # Build ignore arguments
+        IGNORE_ARGS=()
+        for folder in "${EXCLUDE_FOLDERS[@]}"; do
+            IGNORE_ARGS+=("-ignore" "Path $folder")
+        done
+        for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+            IGNORE_ARGS+=("-ignore" "Name $pattern")
+        done
+
+        echo -e "${YELLOW}Starting sync...${NC}"
+        echo -e "${BLUE}Note: Progress shows directories being synced, with data transfer details.${NC}"
+        echo ""
+
+        # Run sync directly and show all output
+        /opt/homebrew/bin/unison "$SOURCE_DRIVE" "$BACKUP_FOLDER" \
+            -auto \
+            -batch \
+            -times \
+            -perms 0 \
+            -fat \
+            -prefer newer \
+            -confirmbigdel=false \
+            "${IGNORE_ARGS[@]}" \
+            -logfile "$LOG_DIR/sync.log"
+
+        SYNC_EXIT=$?
+        echo ""
+        if [ $SYNC_EXIT -eq 0 ] || [ $SYNC_EXIT -eq 1 ]; then
+            echo -e "${GREEN}✓ Sync complete!${NC}"
+        else
+            echo -e "${RED}✗ Sync failed (exit code: $SYNC_EXIT)${NC}"
+            echo "Check logs: $LOG_DIR/sync.log"
+        fi
+    fi
+
+    echo ""
+    echo "Useful commands:"
+    echo "  • Manual sync: cloudsyncbridge sync"
+    echo "  • View logs: cloudsyncbridge logs"
+    echo ""
+    echo "To enable auto-sync later:"
+    echo "  1. Grant Full Disk Access to Terminal.app in System Settings"
+    echo "  2. Run: cloudsyncbridge install"
+    echo ""
+    echo -e "${GREEN}Happy syncing! 🚀${NC}"
+    echo ""
+fi

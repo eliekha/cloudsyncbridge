@@ -4,12 +4,18 @@
 
 set -e
 
+# Get script directory for sourcing shared files
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Source shared menu functions
+source "$SCRIPT_DIR/menu_functions.sh" 2>/dev/null
 
 cat << "EOF"
   ╔══════════════════════════════════════════════════════════════════╗
@@ -41,78 +47,14 @@ echo ""
 echo -e "${YELLOW}CloudSyncBridge - Uninstallation${NC}"
 echo ""
 
-# Interactive menu function with arrow key navigation
-menu() {
-    local prompt="$1"
-    shift
-    local options=("$@")
-    local selected=0
-    local last_selected=-1
-
-    # Hide cursor
-    tput civis >&2
-
-    # Draw initial menu (to stderr so it doesn't get captured)
-    echo -e "${YELLOW}${prompt}${NC}" >&2
-    echo -e "${BLUE}Use ↑/↓ arrows to navigate, Enter to select${NC}" >&2
-    for i in "${!options[@]}"; do
-        echo "" >&2
-    done
-
-    while true; do
-        # Move cursor to start of options (skip prompt + instruction line)
-        tput cuu $(( ${#options[@]} )) >&2
-
-        # Display options
-        for i in "${!options[@]}"; do
-            # Clear the line
-            tput el >&2
-            if [ $i -eq $selected ]; then
-                echo -e "  ${GREEN}▶ ${options[$i]}${NC}" >&2
-            else
-                echo "    ${options[$i]}" >&2
-            fi
-        done
-
-        # Read key from tty
-        IFS= read -rsn1 key </dev/tty
-
-        # Handle arrow keys (escape sequences)
-        if [ "$key" = $'\x1b' ]; then
-            IFS= read -rsn2 key </dev/tty
-            case "$key" in
-                '[A') # Up arrow
-                    ((selected--))
-                    if [ $selected -lt 0 ]; then
-                        selected=$(( ${#options[@]} - 1 ))
-                    fi
-                    ;;
-                '[B') # Down arrow
-                    ((selected++))
-                    if [ $selected -ge ${#options[@]} ]; then
-                        selected=0
-                    fi
-                    ;;
-            esac
-        elif [ "$key" = "" ]; then
-            # Enter key
-            break
-        fi
-    done
-
-    # Show cursor
-    tput cnorm >&2
-
-    # Output selected index to stdout (not stderr)
-    echo "$selected"
-}
 
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 
 # Check if CloudSyncBridge is installed
 if [ ! -d "$HOME/Library/icloud_backup" ] && \
    [ ! -f "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.watch.plist" ] && \
-   [ ! -f "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.periodic.plist" ]; then
+   [ ! -f "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.periodic.plist" ] && \
+   [ ! -f "$LAUNCH_AGENTS_DIR/com.icloudbackup.sync.periodic.plist" ]; then
     echo -e "${YELLOW}CloudSyncBridge doesn't appear to be installed.${NC}"
     echo ""
     echo "Nothing to uninstall."
@@ -166,6 +108,26 @@ if [ -f "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.periodic.plist" ]; then
     launchctl unload "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.periodic.plist" 2>/dev/null || true
     rm "$LAUNCH_AGENTS_DIR/com.icloudbackup.unison.periodic.plist"
     echo -e "${GREEN}✓${NC} Removed periodic sync"
+fi
+
+# Unload and remove new multi-sync agent
+if [ -f "$LAUNCH_AGENTS_DIR/com.icloudbackup.sync.periodic.plist" ]; then
+    AGENTS_FOUND=true
+    echo "Stopping multi-sync periodic agent..."
+    launchctl unload "$LAUNCH_AGENTS_DIR/com.icloudbackup.sync.periodic.plist" 2>/dev/null || true
+    launchctl remove com.icloudbackup.sync.periodic 2>/dev/null || true
+    rm "$LAUNCH_AGENTS_DIR/com.icloudbackup.sync.periodic.plist"
+    echo -e "${GREEN}✓${NC} Removed multi-sync periodic agent"
+fi
+
+# Unload and remove new file watcher agent
+if [ -f "$LAUNCH_AGENTS_DIR/com.icloudbackup.sync.watch.plist" ]; then
+    AGENTS_FOUND=true
+    echo "Stopping file watcher agent..."
+    launchctl unload "$LAUNCH_AGENTS_DIR/com.icloudbackup.sync.watch.plist" 2>/dev/null || true
+    launchctl remove com.icloudbackup.sync.watch 2>/dev/null || true
+    rm "$LAUNCH_AGENTS_DIR/com.icloudbackup.sync.watch.plist"
+    echo -e "${GREEN}✓${NC} Removed file watcher agent"
 fi
 
 # Clean up old rsync-based agents if they exist

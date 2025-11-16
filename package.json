@@ -1,7 +1,7 @@
 {
   "name": "cloudsyncbridge",
-  "version": "1.0.10",
-  "description": "Bidirectional iCloud sync for external drives - keeps your external drive and iCloud Drive perfectly in sync",
+  "version": "1.2.0",
+  "description": "Bidirectional iCloud sync for any folder - sync external drives, projects, downloads, and any folder to iCloud with automatic bidirectional sync",
   "main": "bin/cloudsyncbridge.js",
   "bin": {
     "cloudsyncbridge": "./bin/cloudsyncbridge.js"
