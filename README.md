@@ -1,23 +1,26 @@
 # CloudSyncBridge
 
-**Bidirectional iCloud Sync for External Drives**
+**Bidirectional iCloud Sync for External Drives & Folders**
 
-CloudSyncBridge automatically keeps your external drive and iCloud Drive perfectly in sync, similar to how macOS syncs Desktop and Documents folders. Built on Unison for intelligent bidirectional synchronization.
+CloudSyncBridge automatically keeps multiple folders and external drives perfectly in sync with iCloud Drive, similar to how macOS syncs Desktop and Documents folders. Built on Unison for intelligent bidirectional synchronization with support for multiple syncs.
 
 ## Features
 
-- **Bidirectional sync** - Changes sync both ways: external drive ↔ iCloud
+- **Multiple sync support** - Sync multiple folders/drives to iCloud simultaneously
+- **Bidirectional sync** - Changes sync both ways: source ↔ iCloud
 - **Real-time monitoring** - Files sync within seconds when they change
 - **Rename support** - Properly handles file and folder renames (not treated as deletions)
 - **Conflict resolution** - Newer file automatically wins in conflicts
-- **Configurable exclusions** - Interactively choose which folders and files to exclude
+- **Interactive exclusions** - Visual multi-select menu to choose folders and file patterns to exclude
+- **Folder browser** - Navigate your filesystem with arrow keys to select folders
+- **Live progress tracking** - See real-time sync progress with file count, speed, and ETA
 - **Fallback periodic sync** - Runs every 30 minutes to catch any missed changes
-- **Automatic startup** - Runs automatically when your Mac starts and the drive is connected
-- **Easy installation** - Interactive installer with arrow key navigation
+- **Automatic startup** - Runs automatically when your Mac starts
+- **Easy management** - Interactive CLI for all operations (add, remove, enable, disable syncs)
 
 ## Installation
 
-### Option 1: NPM (Recommended)
+### NPM Installation (Recommended)
 
 Install CloudSyncBridge globally via npm:
 
@@ -25,190 +28,190 @@ Install CloudSyncBridge globally via npm:
 npm install -g cloudsyncbridge
 ```
 
-Then run the installer:
+Then run the interactive installer:
 
 ```bash
 cloudsyncbridge install
 ```
 
-Available commands:
-- `cloudsyncbridge install` - Interactive installation wizard
-- `cloudsyncbridge uninstall` - Remove CloudSyncBridge
-- `cloudsyncbridge status` - Check sync status
-- `cloudsyncbridge sync` - Manually trigger sync
-- `cloudsyncbridge logs` - View sync logs
-- `cloudsyncbridge help` - Show help
+The installer will:
+- Check for prerequisites (Homebrew)
+- Install Unison and fswatch automatically
+- Guide you through selecting folders to sync
+- Let you configure exclusions interactively
+- Set up automatic background sync
+- Optionally run an initial sync
 
-### Option 2: Manual Installation
+## Available Commands
 
-### Prerequisites
+All commands support both direct (with arguments) and interactive modes:
 
-1. **Grant Full Disk Access to Terminal:**
-   - Open **System Settings** > **Privacy & Security** > **Full Disk Access**
-   - Click the lock icon and enter your password
-   - Click the **+** button
-   - Navigate to **Applications** folder
-   - Select **Terminal.app** (or your terminal app like iTerm)
-   - Click **Open**
-   - Make sure the checkbox next to **Terminal** is enabled
+### Core Commands
 
-   > **Note:** The installer will help you with this step automatically.
+- **`cloudsyncbridge install`** - Interactive installation wizard
+- **`cloudsyncbridge uninstall`** - Remove CloudSyncBridge from your system
+- **`cloudsyncbridge add`** - Add a new folder to sync to iCloud (interactive)
+- **`cloudsyncbridge remove [id]`** - Remove a sync configuration (interactive if no ID)
+- **`cloudsyncbridge list`** - List all configured syncs
+- **`cloudsyncbridge status`** - Check sync status and view running agents
 
-2. **Install Homebrew** (if not already installed):
-   ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   ```
+### Sync Management
 
-### Installation Steps
+- **`cloudsyncbridge sync`** - Interactive menu to select which sync to run
+- **`cloudsyncbridge sync all`** - Sync all enabled folders
+- **`cloudsyncbridge sync <id>`** - Sync a specific folder by ID
+- **`cloudsyncbridge enable [id]`** - Enable a sync (interactive if no ID)
+- **`cloudsyncbridge disable [id]`** - Disable a sync (interactive if no ID)
 
-1. Clone or download this repository to your external drive
+### Monitoring
 
-2. Open Terminal and navigate to the folder:
-   ```bash
-   cd "/Volumes/YourDriveName/path/to/cloudbridge"
-   ```
+- **`cloudsyncbridge logs [id]`** - View sync logs (all or specific)
+- **`cloudsyncbridge help`** - Show help message
+- **`cloudsyncbridge version`** - Show version information
 
-3. Run the installation script:
-   ```bash
-   ./install.sh
-   ```
+## Quick Start Example
 
-4. Follow the interactive prompts:
-   - Use ↑/↓ arrow keys to select your external drive from the list
-   - Choose a backup folder name in iCloud
-   - Select which top-level folders to exclude (use Space to toggle, Enter when done)
-   - Optionally add specific subfolder paths to exclude (comma-separated)
-   - Choose file patterns to exclude (*.env, .DS_Store, etc.)
-   - Review and confirm settings
+```bash
+# Install
+npm install -g cloudsyncbridge
+cloudsyncbridge install
 
-5. The installer will:
-   - Install Unison and fswatch (via Homebrew)
-   - Generate your configuration file
-   - Set up automatic background sync agents
-   - Perform an initial sync
+# Add another folder to sync
+cloudsyncbridge add
+
+# List all syncs
+cloudsyncbridge list
+
+# Run manual sync (interactive menu)
+cloudsyncbridge sync
+
+# View logs
+cloudsyncbridge logs
+
+# Disable a sync temporarily
+cloudsyncbridge disable
+
+# Remove a sync
+cloudsyncbridge remove
+```
 
 ## What Gets Synced
 
-- **Location 1:** Your external drive (path specified during installation)
-- **Location 2:** `~/Library/Mobile Documents/com~apple~CloudDocs/YourBackupFolder`
-- **Sync direction:** Bidirectional (changes in either location sync to the other)
+Each sync configuration includes:
+- **Source:** Your chosen folder or external drive
+- **Destination:** `~/Library/Mobile Documents/com~apple~CloudDocs/YourBackupFolder`
+- **Direction:** Bidirectional (changes in either location sync to the other)
 
-### Exclusions
+### Multi-Sync Support
 
-During installation, you can interactively choose which folders and files to exclude from sync.
+You can configure multiple syncs, each with its own:
+- Source folder/drive
+- iCloud destination folder
+- Exclusion rules
+- Enable/disable state
 
-**Top-level folder exclusions** (interactive checkbox selection):
-- `.DocumentRevisions-V100`, `.Spotlight-V100`, `.fseventsd`, `.Trashes`, `.TemporaryItems` - macOS system folders (recommended)
+## Exclusion Configuration
+
+During setup (install or add), you'll interactively configure exclusions:
+
+### 1. Top-Level Folder Exclusions
+Visual multi-select menu with pre-selected recommended exclusions:
+- `.DocumentRevisions-V100`, `.Spotlight-V100`, `.fseventsd`, `.Trashes`, `.TemporaryItems` (recommended)
 - Any other top-level folders you want to skip
+- Use Space to toggle, ↑/↓ to navigate, Enter to confirm
 
-**Subfolder exclusions** (comma-separated paths):
-- Specify relative paths like `Projects/node_modules`, `Documents/.git`, `Music/cache`
+### 2. Subfolder Exclusions
+Comma-separated relative paths:
+- Example: `Projects/node_modules, Documents/.git, Music/cache`
 - Great for excluding nested folders without excluding their parent
 
-**File pattern exclusions** (optional):
+### 3. File Pattern Exclusions
+Default patterns (optional):
 - `*.env` - Environment variables/secrets
-- `.DS_Store`, `._*` - macOS system files
-- Custom patterns like `*.log`, `*.tmp`, `node_modules`, `.git`, etc.
+- `.DS_Store`, `._*` - macOS metadata files
+
+Custom patterns:
+- `*.log`, `*.tmp`, `node_modules`, `.git`, etc.
+
+## Interactive Features
+
+### Folder Browser
+Navigate your filesystem with arrow keys:
+- `↑/↓` - Move selection
+- `→` - Expand folder
+- `←` - Collapse folder
+- `Enter` - Select folder
+- Folders already being synced show a ⚡ indicator
+
+### Live Sync Progress
+During sync, see real-time updates:
+```
+[1/100 - 1%] Syncing: Projects
+  ✓ Complete | Speed: 2.3 files/s | ETA: 42s
+
+[2/100 - 2%] Syncing: Documents
+  ✓ Complete | Speed: 2.5 files/s | ETA: 39s
+```
 
 ## Usage
 
 The sync runs automatically in the background. No manual intervention needed!
 
-### Manual Commands
+### Automatic Sync
 
-**View sync logs:**
+Two background agents run automatically:
+- **File watcher** - Detects changes in real-time
+- **Periodic sync** - Runs every 30 minutes as a fallback
+
+### Manual Sync
+
+Trigger a manual sync anytime:
 ```bash
-tail -f ~/Library/Logs/icloud_backup/sync.log
+cloudsyncbridge sync
 ```
 
-**Run manual sync:**
+Or sync a specific folder:
 ```bash
-~/Library/icloud_backup/sync_unison.sh
+cloudsyncbridge sync my-folder
 ```
 
-**Check if agents are running:**
+### Managing Syncs
+
+**View all syncs:**
 ```bash
-launchctl list | grep icloudbackup
+cloudsyncbridge list
 ```
 
-You should see:
-- `com.icloudbackup.unison.watch` - Real-time file watcher
-- `com.icloudbackup.unison.periodic` - Periodic backup (every 30 min)
-
-### Testing the Sync
-
-**Test forward sync (external drive → iCloud):**
+**Add a new sync:**
 ```bash
-touch "/Volumes/YourDrive/test_forward.txt"
-# Wait ~5-10 seconds, then check iCloud folder
+cloudsyncbridge add
 ```
 
-**Test reverse sync (iCloud → external drive):**
+**Temporarily disable a sync:**
 ```bash
-touch ~/Library/Mobile\ Documents/com~apple~CloudDocs/YourBackupFolder/test_reverse.txt
-# Wait ~5-10 seconds, then check external drive
+cloudsyncbridge disable
 ```
 
-**Test rename (works in both directions):**
+**Re-enable a sync:**
 ```bash
-# Create and rename a folder in iCloud
-mkdir ~/Library/Mobile\ Documents/com~apple~CloudDocs/YourBackupFolder/test_folder
-sleep 10
-mv ~/Library/Mobile\ Documents/com~apple~CloudDocs/YourBackupFolder/test_folder \
-   ~/Library/Mobile\ Documents/com~apple~CloudDocs/YourBackupFolder/renamed_folder
-# Wait ~10 seconds - it will be properly renamed on external drive too!
+cloudsyncbridge enable
+# Optionally run sync immediately after enabling
 ```
 
-## Customization
-
-Edit `~/Library/icloud_backup/config.sh` to customize:
-- Excluded folders
-- Excluded file patterns
-- Backup destination name
-
-After making changes, restart the agents:
+**Remove a sync:**
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.icloudbackup.unison.watch.plist
-launchctl unload ~/Library/LaunchAgents/com.icloudbackup.unison.periodic.plist
-launchctl load ~/Library/LaunchAgents/com.icloudbackup.unison.watch.plist
-launchctl load ~/Library/LaunchAgents/com.icloudbackup.unison.periodic.plist
-```
-
-## Uninstallation
-
-To stop automatic syncs:
-```bash
-./uninstall.sh
-```
-
-Or manually:
-```bash
-launchctl unload ~/Library/LaunchAgents/com.icloudbackup.unison.watch.plist
-launchctl unload ~/Library/LaunchAgents/com.icloudbackup.unison.periodic.plist
-rm ~/Library/LaunchAgents/com.icloudbackup.unison.*.plist
-```
-
-This removes the background agents but keeps your synced files in both locations.
-
-To completely remove everything:
-```bash
-rm -rf ~/Library/icloud_backup/
-rm -rf ~/Library/Logs/icloud_backup/
-rm -rf ~/.unison/
-```
-
-To delete synced files (WARNING - permanent deletion):
-```bash
-rm -rf ~/Library/Mobile\ Documents/com~apple~CloudDocs/YourBackupFolder
+cloudsyncbridge remove
+# Files remain safe in both locations
 ```
 
 ## How It Works
 
-1. **Unified file watcher** (`watch_unison.sh`) uses `fswatch` to monitor BOTH locations for changes
-2. **Sync script** (`sync_unison.sh`) uses Unison for intelligent bidirectional sync
-3. **Unison** maintains archive files to track state and detect renames/moves
-4. **launchd agents** run the watcher and periodic sync in the background
-5. Changes sync to both locations, then iCloud syncs to Apple's cloud
+1. **Multi-sync manager** (`sync_manager.sh`) manages all configured syncs
+2. **File watcher agent** monitors all enabled sync sources for changes
+3. **Periodic agent** runs all enabled syncs every 30 minutes
+4. **Unison** provides intelligent bidirectional sync with rename detection
+5. **Real-time progress** shows file-by-file sync status with statistics
+6. Changes sync to both locations, then iCloud uploads to Apple's cloud
 
 ### Why Unison?
 
@@ -218,81 +221,133 @@ rm -rf ~/Library/Mobile\ Documents/com~apple~CloudDocs/YourBackupFolder
 - **State tracking** - Maintains archives to understand what changed
 - **Battle-tested** - Used for decades in production environments
 
+## Configuration Files
+
+All syncs are stored as individual configuration files:
+
+**Sync configurations:**
+- Location: `~/Library/icloud_backup/syncs/`
+- Format: `sync-id.conf`
+- Each contains: source path, destination, exclusions, enabled state
+
+**Global configuration:**
+- Location: `~/Library/icloud_backup/global.conf`
+- Contains: global exclude patterns, iCloud Drive path
+
+**Logs:**
+- Location: `~/Library/Logs/icloud_backup/`
+- Format: `sync-id.log` for each sync, `system.log` for global events
+
 ## Requirements
 
 - macOS
 - iCloud Drive enabled
-- Homebrew (for installing Unison and fswatch)
+- Homebrew (installed automatically if needed)
 - Sufficient iCloud storage space
 - Full Disk Access granted to Terminal.app
 
 ## Troubleshooting
 
-**Sync not running?**
-- Check if drive is mounted: `ls "/Volumes/YourDrive"`
-- Check agent status: `launchctl list | grep icloudbackup`
-- Check logs: `tail -f ~/Library/Logs/icloud_backup/sync.log`
+### Sync not running?
+```bash
+# Check agent status
+cloudsyncbridge status
 
-**Files not syncing?**
+# Check logs
+cloudsyncbridge logs
+
+# Manually trigger sync
+cloudsyncbridge sync
+```
+
+### Files not syncing?
 - Wait 10-15 seconds after making a change
-- Check if Unison is running: `ps aux | grep unison`
-- Manually trigger sync: `~/Library/icloud_backup/sync_unison.sh`
+- Check if folder is enabled: `cloudsyncbridge list`
+- Run manual sync: `cloudsyncbridge sync`
+- Check logs: `cloudsyncbridge logs`
 
-**Out of iCloud storage?**
-- Check usage in System Settings > Apple ID > iCloud
-- Upgrade storage plan or exclude more folders in `config.sh`
+### Permission errors?
+- Grant Full Disk Access to Terminal.app
+- System Settings → Privacy & Security → Full Disk Access
+- Add Terminal.app and enable the checkbox
 
-**Permission errors?**
-- Grant Full Disk Access to Terminal.app (see Prerequisites)
-- Check logs for "Operation not permitted" errors
+### "Archives are locked" error?
+```bash
+# Stop all sync processes
+pkill -f unison
 
-**"Archives are locked" error?**
-- Stop all sync processes: `pkill -f unison`
-- Remove lock files: `rm -f ~/.unison/lk*`
-- Restart sync: `~/Library/icloud_backup/sync_unison.sh`
+# Remove lock files
+rm -f ~/.unison/lk*
 
-**Initial sync taking too long?**
-- Large drives can take 10-30+ minutes on first sync
-- Check progress: `ps aux | grep unison` (high CPU = actively syncing)
-- View what's syncing: `tail -f ~/Library/Logs/icloud_backup/sync.log`
+# Restart sync
+cloudsyncbridge sync
+```
 
-**Conflicts?**
-- Unison automatically chooses the newer file
-- Check logs for "conflict" messages
-- Manually resolve by keeping the version you want
+### Out of iCloud storage?
+- Check usage: System Settings → Apple ID → iCloud
+- Disable syncs: `cloudsyncbridge disable`
+- Add more exclusions to existing syncs
+- Upgrade iCloud storage plan
 
-**Initial sync taking long?**
-- First sync scans all files and can take 30+ minutes for large drives
+### Initial sync taking long?
+- Large folders can take 10-30+ minutes on first sync
+- Monitor progress: `cloudsyncbridge logs`
+- Syncs run sequentially for multiple folders
 - Subsequent syncs are much faster (only changed files)
-- Monitor progress: `tail -f ~/Library/Logs/icloud_backup/sync.log`
+
+### iCloud taking long to upload to Apple's servers?
+This is separate from our sync - we sync to the local iCloud Drive folder, then macOS uploads to Apple's servers.
+
+**Speed up iCloud upload:**
+```bash
+# Restart iCloud daemon
+killall bird
+
+# Check iCloud status
+brctl log --wait --shorten
+
+# Keep Mac awake and plugged in for faster uploads
+```
 
 ## Advanced
 
-**View Unison archives:**
+### Customize exclusions
+Edit the config file for a specific sync:
 ```bash
-ls ~/.unison/
+# Find your sync ID
+cloudsyncbridge list
+
+# Edit config
+nano ~/Library/icloud_backup/syncs/your-sync-id.conf
+
+# Restart agents for changes to take effect
+launchctl unload ~/Library/LaunchAgents/com.icloudbackup.sync.*.plist
+launchctl load ~/Library/LaunchAgents/com.icloudbackup.sync.*.plist
 ```
 
-**Clear archives (forces full resync):**
+### Clear Unison archives (forces full rescan)
 ```bash
 rm -rf ~/.unison/ar*
 ```
 
-**Customize Unison options:**
-Edit `~/Library/icloud_backup/sync_unison.sh` and modify the Unison command parameters.
+### View background agent logs
+```bash
+# File watcher
+tail -f ~/Library/Logs/icloud_backup/watch.log
 
-**Sync multiple drives:**
-Run the installer separately for each drive. Each will get its own configuration and backup folder.
+# Periodic sync
+tail -f ~/Library/Logs/icloud_backup/periodic.log
+```
 
 ## File Locations
 
 - **Scripts:** `~/Library/icloud_backup/`
-- **Configuration:** `~/Library/icloud_backup/config.sh` (generated during installation)
-- **Configuration template:** `config.sh.example` (in repository)
-- **Logs:** `~/Library/Logs/icloud_backup/sync.log`
-- **LaunchAgents:** `~/Library/LaunchAgents/com.icloudbackup.unison.*.plist`
+- **Sync configs:** `~/Library/icloud_backup/syncs/*.conf`
+- **Global config:** `~/Library/icloud_backup/global.conf`
+- **Logs:** `~/Library/Logs/icloud_backup/`
+- **LaunchAgents:** `~/Library/LaunchAgents/com.icloudbackup.sync.*.plist`
 - **Unison archives:** `~/.unison/`
-- **iCloud backup folder:** `~/Library/Mobile Documents/com~apple~CloudDocs/YourBackupFolder`
+- **iCloud folders:** `~/Library/Mobile Documents/com~apple~CloudDocs/`
 
 ## Contributing
 
