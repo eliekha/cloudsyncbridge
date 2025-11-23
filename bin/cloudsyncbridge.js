@@ -465,70 +465,69 @@ function editSync() {
 // Main command handler
 const command = process.argv[2];
 
-switch (command) {
-  case 'install':
-    runScript('install.sh');
-    break;
+// Check for updates first, then execute command
+checkForUpdates(() => {
+  switch (command) {
+    case 'install':
+      runScript('install.sh');
+      break;
 
-  case 'uninstall':
-    runScript('uninstall.sh');
-    break;
+    case 'uninstall':
+      runScript('uninstall.sh');
+      break;
 
-  case 'add':
-    addSync();
-    break;
+    case 'add':
+      addSync();
+      break;
 
-  case 'remove':
-    removeSync();
-    break;
+    case 'remove':
+      removeSync();
+      break;
 
-  case 'list':
-    checkForUpdates(() => {
+    case 'list':
       listSyncs();
-    });
-    break;
+      break;
 
-  case 'enable':
-    enableSync();
-    break;
+    case 'enable':
+      enableSync();
+      break;
 
-  case 'disable':
-    disableSync();
-    break;
+    case 'disable':
+      disableSync();
+      break;
 
-  case 'edit':
-    editSync();
-    break;
+    case 'edit':
+      editSync();
+      break;
 
-  case 'status':
-    checkStatus();
-    checkForUpdates();
-    break;
+    case 'status':
+      checkStatus();
+      break;
 
-  case 'sync':
-    manualSync();
-    break;
+    case 'sync':
+      manualSync();
+      break;
 
-  case 'logs':
-    viewLogs();
-    break;
+    case 'logs':
+      viewLogs();
+      break;
 
-  case 'version':
-  case '--version':
-  case '-v':
-    showVersion();
-    break;
+    case 'version':
+    case '--version':
+    case '-v':
+      showVersion();
+      break;
 
-  case 'help':
-  case '--help':
-  case '-h':
-  case undefined:
-    showHelp();
-    checkForUpdates();
-    break;
+    case 'help':
+    case '--help':
+    case '-h':
+    case undefined:
+      showHelp();
+      break;
 
-  default:
-    console.error(`Unknown command: ${command}\n`);
-    showHelp();
-    process.exit(1);
-}
+    default:
+      console.error(`Unknown command: ${command}\n`);
+      showHelp();
+      process.exit(1);
+  }
+});
