@@ -3,8 +3,81 @@
 const { execSync, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 
 const SCRIPTS_DIR = path.join(__dirname, '..', 'scripts');
+const UPDATE_CHECK_FILE = `${process.env.HOME}/.cloudsyncbridge_update_check`;
+const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+
+function checkForUpdates(callback) {
+  // Check if we've checked recently
+  try {
+    if (fs.existsSync(UPDATE_CHECK_FILE)) {
+      const lastCheck = parseInt(fs.readFileSync(UPDATE_CHECK_FILE, 'utf8'));
+      if (Date.now() - lastCheck < UPDATE_CHECK_INTERVAL) {
+        // Skip check if we checked within the last 24 hours
+        return callback && callback();
+      }
+    }
+  } catch (err) {
+    // Ignore errors reading check file
+  }
+
+  // Get current version
+  const packageJson = require('../package.json');
+  const currentVersion = packageJson.version;
+
+  // Check npm registry for latest version
+  const options = {
+    hostname: 'registry.npmjs.org',
+    path: '/cloudsyncbridge/latest',
+    method: 'GET',
+    timeout: 3000
+  };
+
+  const req = https.request(options, (res) => {
+    let data = '';
+
+    res.on('data', (chunk) => {
+      data += chunk;
+    });
+
+    res.on('end', () => {
+      try {
+        const npmData = JSON.parse(data);
+        const latestVersion = npmData.version;
+
+        // Save last check time
+        fs.writeFileSync(UPDATE_CHECK_FILE, Date.now().toString());
+
+        // Compare versions
+        if (latestVersion !== currentVersion) {
+          console.log(`\n\x1b[1;33m╔════════════════════════════════════════════════════════════════╗\x1b[0m`);
+          console.log(`\x1b[1;33m║  Update available! ${currentVersion} → ${latestVersion}${' '.repeat(Math.max(0, 37 - currentVersion.length - latestVersion.length))}║\x1b[0m`);
+          console.log(`\x1b[1;33m║                                                                ║\x1b[0m`);
+          console.log(`\x1b[1;33m║  Run: \x1b[0;32mnpm install -g cloudsyncbridge\x1b[1;33m                        ║\x1b[0m`);
+          console.log(`\x1b[1;33m╚════════════════════════════════════════════════════════════════╝\x1b[0m\n`);
+        }
+      } catch (err) {
+        // Silently ignore parse errors
+      }
+
+      callback && callback();
+    });
+  });
+
+  req.on('error', () => {
+    // Silently ignore network errors
+    callback && callback();
+  });
+
+  req.on('timeout', () => {
+    req.destroy();
+    callback && callback();
+  });
+
+  req.end();
+}
 
 function showBanner() {
   console.log(`
@@ -410,7 +483,9 @@ switch (command) {
     break;
 
   case 'list':
-    listSyncs();
+    checkForUpdates(() => {
+      listSyncs();
+    });
     break;
 
   case 'enable':
@@ -427,6 +502,7 @@ switch (command) {
 
   case 'status':
     checkStatus();
+    checkForUpdates();
     break;
 
   case 'sync':
@@ -448,6 +524,7 @@ switch (command) {
   case '-h':
   case undefined:
     showHelp();
+    checkForUpdates();
     break;
 
   default:
