@@ -269,6 +269,15 @@ perform_sync() {
     TOTAL_FILES=0
     COMPLETED_FILES=0
 
+    # Build deletion args based on SYNC_DELETIONS setting
+    DELETION_ARGS=()
+    if [ "${SYNC_DELETIONS:-true}" = "false" ]; then
+        # Don't sync deletions - keep files in both locations
+        # Specify -nodeletion twice (once for each root) to prevent deletions in both directions
+        DELETION_ARGS+=("-nodeletion" "$source_path" "-nodeletion" "$dest_path")
+        log "$sync_id" "Deletion sync disabled - files will be kept when deleted elsewhere"
+    fi
+
     # Check if this is the first sync and build command accordingly
     if [ "${FIRST_SYNC_DONE:-false}" = "false" ]; then
         log "$sync_id" "First sync detected - will copy all files and prefer source on conflicts"
@@ -284,6 +293,7 @@ perform_sync() {
             -force "$source_path" \
             -confirmbigdel=false \
             "${IGNORE_ARGS[@]}" \
+            "${DELETION_ARGS[@]}" \
             -logfile "$LOG_DIR/${sync_id}.log"
 
         local exit_code=$?
@@ -299,6 +309,7 @@ perform_sync() {
             -prefer newer \
             -confirmbigdel=false \
             "${IGNORE_ARGS[@]}" \
+            "${DELETION_ARGS[@]}" \
             -logfile "$LOG_DIR/${sync_id}.log"
 
         local exit_code=$?
@@ -408,6 +419,12 @@ list_syncs() {
             echo -e "  ${BLUE}Source:${NC} $SOURCE_PATH"
             echo -e "  ${BLUE}Destination:${NC} $DEST_PATH"
             echo -e "  ${BLUE}Status:${NC} ${ENABLED:-true}"
+
+            local deletion_status="enabled"
+            if [ "${SYNC_DELETIONS:-true}" = "false" ]; then
+                deletion_status="disabled (files kept when deleted)"
+            fi
+            echo -e "  ${BLUE}Deletion sync:${NC} $deletion_status"
             echo ""
         )
     done < <(get_all_syncs)

@@ -8,6 +8,7 @@ CloudSyncBridge automatically keeps multiple folders and external drives perfect
 
 - **Multiple sync support** - Sync multiple folders/drives to iCloud simultaneously
 - **Bidirectional sync** - Changes sync both ways: source ↔ iCloud
+- **Deletion sync control** - Choose whether deletions sync between locations or keep files safe
 - **Real-time monitoring** - Files sync within seconds when they change
 - **Rename support** - Properly handles file and folder renames (not treated as deletions)
 - **Conflict resolution** - Newer file automatically wins in conflicts
@@ -16,6 +17,7 @@ CloudSyncBridge automatically keeps multiple folders and external drives perfect
 - **Live progress tracking** - See real-time sync progress with file count, speed, and ETA
 - **Fallback periodic sync** - Runs every 30 minutes to catch any missed changes
 - **Automatic startup** - Runs automatically when your Mac starts
+- **Automatic upgrades** - Scripts update automatically when you upgrade via npm
 - **Easy management** - Interactive CLI for all operations (add, remove, enable, disable syncs)
 
 ## Installation
@@ -53,6 +55,7 @@ All commands support both direct (with arguments) and interactive modes:
 - **`cloudsyncbridge add`** - Add a new folder to sync to iCloud (interactive)
 - **`cloudsyncbridge remove [id]`** - Remove a sync configuration (interactive if no ID)
 - **`cloudsyncbridge list`** - List all configured syncs
+- **`cloudsyncbridge edit [id]`** - Edit sync settings like deletion sync (interactive if no ID)
 - **`cloudsyncbridge status`** - Check sync status and view running agents
 
 ### Sync Management
@@ -88,6 +91,9 @@ cloudsyncbridge sync
 # View logs
 cloudsyncbridge logs
 
+# Toggle deletion sync for a sync
+cloudsyncbridge edit
+
 # Disable a sync temporarily
 cloudsyncbridge disable
 
@@ -108,7 +114,28 @@ You can configure multiple syncs, each with its own:
 - Source folder/drive
 - iCloud destination folder
 - Exclusion rules
+- Deletion sync preference
 - Enable/disable state
+
+### Deletion Sync Control
+
+When creating or editing a sync, you can choose how deletions are handled:
+
+**Sync deletions (default):**
+- Delete a file in source → deletes in iCloud
+- Delete a file in iCloud → deletes in source
+- Best for: True mirroring, keeping both locations identical
+
+**Don't sync deletions (safer):**
+- Deletions only affect the location where you delete
+- Files remain in the other location even if deleted elsewhere
+- Best for: Extra safety, preventing accidental data loss
+- Note: Can lead to duplicates if you delete and recreate files
+
+You can toggle this setting anytime using:
+```bash
+cloudsyncbridge edit
+```
 
 ## Exclusion Configuration
 

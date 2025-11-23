@@ -149,6 +149,39 @@ configure_exclusions "$selected_path" "$sync_name"
 exclude_folders=("${CONFIGURED_EXCLUDE_FOLDERS[@]}")
 exclude_patterns=("${CONFIGURED_EXCLUDE_PATTERNS[@]}")
 
+# Step 3.5: Deletion Sync Preference
+echo ""
+echo -e "${BLUE}Deletion Sync Preference${NC}"
+echo "════════════════════════"
+echo ""
+echo "When you delete a file/folder in one location:"
+echo ""
+echo -e "${GREEN}• Sync deletions (default):${NC}"
+echo "  Delete in source → deletes in iCloud"
+echo "  Delete in iCloud → deletes in source"
+echo ""
+echo -e "${YELLOW}• Don't sync deletions:${NC}"
+echo "  Deletions only affect the location where you delete"
+echo "  Files remain in the other location (safer, but can cause duplicates)"
+echo ""
+
+DELETION_OPTIONS=(
+    "Yes, sync deletions (recommended)"
+    "No, keep files when deleted elsewhere (safer)"
+)
+DELETION_CHOICE=$(menu "Sync deletions between locations?" "${DELETION_OPTIONS[@]}")
+
+echo ""
+
+if [ $DELETION_CHOICE -eq 0 ]; then
+    SYNC_DELETIONS="true"
+    echo -e "${GREEN}✓ Deletions will be synced${NC}"
+else
+    SYNC_DELETIONS="false"
+    echo -e "${YELLOW}✓ Deletions will NOT be synced (files kept in both locations)${NC}"
+fi
+echo ""
+
 # Step 4: Confirmation
 clear
 show_banner
@@ -178,6 +211,13 @@ if [ ${#exclude_patterns[@]} -gt 0 ]; then
     echo ""
 fi
 
+if [ "$SYNC_DELETIONS" = "true" ]; then
+    echo -e "${BLUE}Deletion sync:${NC} Enabled (deletions will sync)"
+else
+    echo -e "${BLUE}Deletion sync:${NC} Disabled (files kept when deleted elsewhere)"
+fi
+echo ""
+
 CONFIRM_OPTIONS=("Yes, create this sync" "No, cancel")
 CONFIRM_CHOICE=$(menu "Create this sync?" "${CONFIRM_OPTIONS[@]}")
 
@@ -197,7 +237,7 @@ sync_id=$(generate_sync_id "$selected_path")
 
 # Combine folders and patterns into a single exclusions string for create_sync compatibility
 # We'll manually edit the config after creation to add patterns
-if create_sync "$selected_path" "$sync_name" "${exclude_folders[@]}"; then
+if create_sync "$selected_path" "$sync_name" "$SYNC_DELETIONS" "${exclude_folders[@]}"; then
     # If we have patterns, update the config file to include them
     if [ ${#exclude_patterns[@]} -gt 0 ]; then
         config_file="$HOME/Library/icloud_backup/syncs/${sync_id}.conf"

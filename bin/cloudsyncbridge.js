@@ -69,6 +69,7 @@ function showHelp() {
   console.log('  list          - List all configured syncs');
   console.log('  enable [id]   - Enable a sync (interactive)');
   console.log('  disable [id]  - Disable a sync (interactive)');
+  console.log('  edit [id]     - Edit sync settings (interactive)');
   console.log('  status        - Check sync status and view running agents');
   console.log('  sync [id]     - Manually trigger sync (interactive)');
   console.log('  logs [id]     - View sync logs');
@@ -377,6 +378,17 @@ function disableSync() {
   }
 }
 
+function editSync() {
+  const syncId = process.argv[3];
+
+  // Pass sync ID as argument if provided, otherwise run interactively
+  if (syncId) {
+    runScript('edit_sync.sh', [syncId]);
+  } else {
+    runScript('edit_sync.sh');
+  }
+}
+
 // Main command handler
 const command = process.argv[2];
 
@@ -407,6 +419,10 @@ switch (command) {
 
   case 'disable':
     disableSync();
+    break;
+
+  case 'edit':
+    editSync();
     break;
 
   case 'status':

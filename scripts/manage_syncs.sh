@@ -44,7 +44,8 @@ generate_sync_id() {
 create_sync() {
     local source_path="$1"
     local sync_name="${2:-}"
-    local exclude_folders=("${@:3}")
+    local sync_deletions="${3:-true}"  # Default to true for backward compatibility
+    local exclude_folders=("${@:4}")
 
     # Normalize paths
     source_path=$(cd "$source_path" 2>/dev/null && pwd || echo "$source_path")
@@ -95,6 +96,9 @@ SYNC_EXCLUDE_PATTERNS=(
 
 # Enable this sync
 ENABLED=true
+
+# Sync deletions between locations (true = delete syncs, false = keep files)
+SYNC_DELETIONS=$sync_deletions
 
 # Track first sync (prevents deletions on initial sync)
 FIRST_SYNC_DONE=false
