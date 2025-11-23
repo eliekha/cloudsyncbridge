@@ -41,6 +41,7 @@ The installer will:
 - Install Unison and fswatch automatically
 - Guide you through selecting folders to sync
 - Let you configure exclusions interactively
+- Let you choose deletion sync preference for each folder
 - Set up automatic background sync
 - Optionally run an initial sync
 

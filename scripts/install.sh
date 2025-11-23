@@ -465,6 +465,38 @@ for sync_idx in "${!SELECTED_SYNCS_PATHS[@]}"; do
     done
     SELECTED_SYNCS_EXCLUDES[$sync_idx]="$EXCLUSIONS_STR"
 
+    # Ask about deletion sync preference
+    echo ""
+    echo -e "${BLUE}Deletion Sync Preference${NC}"
+    echo "════════════════════════"
+    echo ""
+    echo "When you delete a file/folder in one location:"
+    echo ""
+    echo -e "${GREEN}• Sync deletions (default):${NC}"
+    echo "  Delete in source → deletes in iCloud"
+    echo "  Delete in iCloud → deletes in source"
+    echo ""
+    echo -e "${YELLOW}• Don't sync deletions:${NC}"
+    echo "  Deletions only affect the location where you delete"
+    echo "  Files remain in the other location (safer, but can cause duplicates)"
+    echo ""
+
+    DELETION_OPTIONS=(
+        "Yes, sync deletions (recommended)"
+        "No, keep files when deleted elsewhere (safer)"
+    )
+    DELETION_CHOICE=$(menu "Sync deletions between locations?" "${DELETION_OPTIONS[@]}")
+
+    echo ""
+
+    if [ $DELETION_CHOICE -eq 0 ]; then
+        SELECTED_SYNCS_DELETIONS[$sync_idx]="true"
+        echo -e "${GREEN}✓ Deletions will be synced${NC}"
+    else
+        SELECTED_SYNCS_DELETIONS[$sync_idx]="false"
+        echo -e "${YELLOW}✓ Deletions will NOT be synced (files kept in both locations)${NC}"
+    fi
+
     echo ""
     echo -e "${GREEN}✓ Configuration complete for: $SYNC_NAME${NC}"
     echo ""
@@ -488,6 +520,13 @@ for sync_idx in "${!SELECTED_SYNCS_PATHS[@]}"; do
         echo -e "  Exclusions: $EXCLUDE_COUNT item(s)"
     else
         echo -e "  Exclusions: None"
+    fi
+
+    # Show deletion sync preference
+    if [ "${SELECTED_SYNCS_DELETIONS[$sync_idx]}" = "false" ]; then
+        echo -e "  Deletion sync: ${YELLOW}disabled (files kept when deleted)${NC}"
+    else
+        echo -e "  Deletion sync: ${GREEN}enabled${NC}"
     fi
     echo ""
 done
@@ -597,6 +636,9 @@ $(echo -e "$EXCLUDE_PATTERNS_STR")
 
 # Enable this sync
 ENABLED=true
+
+# Sync deletions between locations (true = delete syncs, false = keep files)
+SYNC_DELETIONS=${SELECTED_SYNCS_DELETIONS[$sync_idx]}
 
 # Track first sync (prevents deletions on initial sync)
 FIRST_SYNC_DONE=false
