@@ -143,6 +143,7 @@ function showHelp() {
   console.log('  enable [id]   - Enable a sync (interactive)');
   console.log('  disable [id]  - Disable a sync (interactive)');
   console.log('  edit [id]     - Edit sync settings (interactive)');
+  console.log('  optimize      - Manage iCloud "Optimize Mac Storage" setting');
   console.log('  status        - Check sync status and view running agents');
   console.log('  sync [id]     - Manually trigger sync (interactive)');
   console.log('  logs [id]     - View sync logs');
@@ -462,6 +463,17 @@ function editSync() {
   }
 }
 
+function optimizeStorage() {
+  const subcommand = process.argv[3];
+
+  // Pass subcommand if provided (status, enable, disable), otherwise run interactively
+  if (subcommand) {
+    runScript('optimize_storage.sh', [subcommand]);
+  } else {
+    runScript('optimize_storage.sh');
+  }
+}
+
 // Main command handler
 const command = process.argv[2];
 
@@ -498,6 +510,10 @@ checkForUpdates(() => {
 
     case 'edit':
       editSync();
+      break;
+
+    case 'optimize':
+      optimizeStorage();
       break;
 
     case 'status':

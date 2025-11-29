@@ -57,6 +57,7 @@ All commands support both direct (with arguments) and interactive modes:
 - **`cloudsyncbridge remove [id]`** - Remove a sync configuration (interactive if no ID)
 - **`cloudsyncbridge list`** - List all configured syncs
 - **`cloudsyncbridge edit [id]`** - Edit sync settings like deletion sync (interactive if no ID)
+- **`cloudsyncbridge optimize`** - Manage iCloud "Optimize Mac Storage" setting
 - **`cloudsyncbridge status`** - Check sync status and view running agents
 
 ### Sync Management
@@ -136,6 +137,27 @@ When creating or editing a sync, you can choose how deletions are handled:
 You can toggle this setting anytime using:
 ```bash
 cloudsyncbridge edit
+```
+
+### Storage Optimization
+
+By default, CloudSyncBridge copies files to iCloud Drive, meaning files exist in **two places** on your Mac:
+1. Your source folder (e.g., external drive)
+2. iCloud's local cache (`~/Library/Mobile Documents/com~apple~CloudDocs/`)
+
+**"Optimize Mac Storage"** is a macOS feature that automatically removes local iCloud copies when disk space is needed, while keeping files safe in iCloud servers. This prevents double storage usage.
+
+During installation and when adding syncs, CloudSyncBridge will:
+- Show you the current "Optimize Mac Storage" setting
+- Let you enable/disable it as needed
+- Recommend enabling it to save disk space
+
+You can also manage this setting anytime:
+```bash
+cloudsyncbridge optimize           # Interactive mode
+cloudsyncbridge optimize status    # Check current setting
+cloudsyncbridge optimize enable    # Enable optimization
+cloudsyncbridge optimize disable   # Disable optimization
 ```
 
 ## Exclusion Configuration

@@ -37,6 +37,7 @@ if (process.env.npm_config_global === 'true') {
         'enable_sync.sh',
         'disable_sync.sh',
         'edit_sync.sh',
+        'optimize_storage.sh',
         'sync_interactive.sh',
         'setup_agents.sh',
         'menu_functions.sh'

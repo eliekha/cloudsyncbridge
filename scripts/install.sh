@@ -531,6 +531,69 @@ for sync_idx in "${!SELECTED_SYNCS_PATHS[@]}"; do
     echo ""
 done
 
+# iCloud Storage Optimization prompt
+echo ""
+echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${BLUE}  iCloud Storage Optimization${NC}"
+echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+echo ""
+echo "CloudSyncBridge copies files to iCloud Drive, which means files"
+echo "exist in BOTH your source location AND iCloud's local cache."
+echo ""
+echo -e "${GREEN}\"Optimize Mac Storage\"${NC} lets macOS automatically remove local"
+echo "iCloud copies when disk space is needed. Files remain safe in iCloud"
+echo "and download automatically when you access them."
+echo ""
+
+# Check current setting
+CURRENT_OPTIMIZE=$(defaults read com.apple.bird "optimize-storage" 2>/dev/null || echo "0")
+
+if [ "$CURRENT_OPTIMIZE" = "1" ]; then
+    echo -e "Current setting: ${GREEN}ENABLED${NC} (recommended - saves disk space)"
+else
+    echo -e "Current setting: ${YELLOW}DISABLED${NC} (files take up double space)"
+fi
+echo ""
+
+if [ "$CURRENT_OPTIMIZE" = "1" ]; then
+    OPTIMIZE_OPTIONS=(
+        "Keep enabled (recommended)"
+        "Disable - keep all iCloud files locally"
+    )
+else
+    OPTIMIZE_OPTIONS=(
+        "Enable (recommended - saves space)"
+        "Keep disabled - store all iCloud files locally"
+    )
+fi
+
+OPTIMIZE_CHOICE=$(menu "Optimize Mac Storage setting:" "${OPTIMIZE_OPTIONS[@]}")
+
+echo ""
+
+if [ "$CURRENT_OPTIMIZE" = "1" ]; then
+    # Currently enabled
+    if [ $OPTIMIZE_CHOICE -eq 1 ]; then
+        defaults write com.apple.bird "optimize-storage" -bool false
+        echo -e "${YELLOW}✓ Optimize Mac Storage disabled${NC}"
+        echo "  All iCloud files will be kept locally."
+    else
+        echo -e "${GREEN}✓ Keeping Optimize Mac Storage enabled${NC}"
+    fi
+else
+    # Currently disabled
+    if [ $OPTIMIZE_CHOICE -eq 0 ]; then
+        defaults write com.apple.bird "optimize-storage" -bool true
+        echo -e "${GREEN}✓ Optimize Mac Storage enabled${NC}"
+        echo "  macOS will automatically free up space as needed."
+    else
+        echo -e "${YELLOW}✓ Keeping Optimize Mac Storage disabled${NC}"
+        echo "  Note: Files will take up space in both locations."
+    fi
+fi
+
+echo ""
+
 CONFIRM_OPTIONS=("Yes, continue with installation" "No, cancel installation")
 CONFIRM_CHOICE=$(menu "Continue with these settings?" "${CONFIRM_OPTIONS[@]}")
 
